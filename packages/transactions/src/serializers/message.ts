@@ -11,6 +11,7 @@ import {
 import { getAddressCodec } from '@solana/addresses';
 import { Codec } from '@solana/codecs-core';
 
+import type { getCompiledAddressTableLookups } from '../compile-address-table-lookups';
 import { CompiledMessage } from '../message';
 import { SerializedMessageBytes } from '../types';
 import { getAddressTableLookupCodec } from './address-table-lookup';
@@ -110,7 +111,18 @@ function getPreludeStructSerializerTuple(): StructToSerializerTuple<CompiledMess
 }
 
 function getAddressTableLookupsSerializer() {
-    return array(getAddressTableLookupCodec(), {
+    // temporary: will be changed to using codecs
+    type AddressTableLookup = ReturnType<typeof getCompiledAddressTableLookups>[number];
+    const addressTableLookupCodec = getAddressTableLookupCodec();
+    const addressTableLookupSerializer: Serializer<AddressTableLookup> = {
+        description: addressTableLookupCodec.description,
+        deserialize: addressTableLookupCodec.decode,
+        fixedSize: addressTableLookupCodec.fixedSize,
+        maxSize: addressTableLookupCodec.maxSize,
+        serialize: addressTableLookupCodec.encode,
+    };
+
+    return array(addressTableLookupSerializer, {
         ...(__DEV__ ? { description: 'A compact array of address table lookups belonging to this transaction' } : null),
         size: shortU16(),
     });
